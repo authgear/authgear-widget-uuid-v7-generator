@@ -210,6 +210,7 @@ const UUIDGenerator: React.FC = () => {
         const parsed = parseTimestamp(isoDatetime, 'iso');
         if (parsed === null) {
           setError("Please enter a valid timestamp in one of the formats (Unix timestamp, ISO datetime, or datetime picker).");
+          setGeneratedUUIDs([]);
           return;
         }
         timestamp = parsed;
@@ -217,11 +218,13 @@ const UUIDGenerator: React.FC = () => {
         const parsed = parseTimestamp(unixTimestamp, 'unix');
         if (parsed === null) {
           setError("Please enter a valid timestamp in one of the formats (Unix timestamp, ISO datetime, or datetime picker).");
+          setGeneratedUUIDs([]);
           return;
         }
         timestamp = parsed;
       } else {
         setError("Please enter a valid timestamp in one of the formats (Unix timestamp, ISO datetime, or datetime picker).");
+        setGeneratedUUIDs([]);
         return;
       }
     }
