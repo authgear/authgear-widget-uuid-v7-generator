@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 
-import { generateUUIDv7, parseUUIDv7Timestamp, formatUUID } from "../utils/uuidUtils";
+import { generateUUIDv7, parseUUIDv7Timestamp, formatUUID, getUUIDv7Fields } from "../utils/uuidUtils";
 import DateTimePicker from "./DateTimePicker";
 import UUIDInspector from "./UUIDInspector";
 
@@ -310,9 +310,7 @@ const UUIDGenerator: React.FC = () => {
       color: "#495057", 
       padding: 0, 
       width: "100%", 
-      height: "100%", 
-      boxSizing: "border-box", 
-      overflow: "auto" 
+      boxSizing: "border-box",
     }}>
       <div style={{ 
         display: "flex", 
@@ -756,6 +754,32 @@ const UUIDGenerator: React.FC = () => {
                   {generatedUUIDs.map((uuid, index) => {
                     const timestampInfo = getTimestampInfo(uuid);
                     const isSelected = selectedUUIDIndex === index;
+                    const showHighlight =
+                      isSelected && inspectorExpanded && inspectorClickedId != null;
+                    const fields = showHighlight ? getUUIDv7Fields(uuid) : null;
+                    const activeField = fields?.find((f) => f.id === inspectorClickedId) ?? null;
+                    const highlightSet = new Set<string>();
+                    if (activeField) {
+                      for (const [a, b] of activeField.ranges) {
+                        for (let i = a; i < b; i++) highlightSet.add(String(i));
+                      }
+                    }
+                    const uuidContent = showHighlight && activeField
+                      ? uuid.split("").map((ch, i) => (
+                          <span
+                            key={i}
+                            style={{
+                              padding: "1px 0",
+                              backgroundColor: highlightSet.has(String(i))
+                                ? "rgba(11, 99, 233, 0.2)"
+                                : "transparent",
+                              color: highlightSet.has(String(i)) ? "#0B63E9" : "inherit",
+                            }}
+                          >
+                            {ch}
+                          </span>
+                        ))
+                      : uuid;
                     return (
                       <div 
                         key={index} 
@@ -802,6 +826,25 @@ const UUIDGenerator: React.FC = () => {
                           gap: "8px",
                           marginBottom: timestampInfo ? "8px" : "0"
                         }}>
+                          <span
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              flexShrink: 0,
+                              color: inspectorExpanded && isSelected ? "#0B63E9" : "#6c757d",
+                            }}
+                            title={inspectorExpanded && isSelected ? "Hide details" : "See more details"}
+                          >
+                            {inspectorExpanded && isSelected ? (
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 10L8 6L12 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                            )}
+                          </span>
                           <code style={{ 
                             fontSize: "14px",
                             color: "#495057",
@@ -809,7 +852,7 @@ const UUIDGenerator: React.FC = () => {
                             flex: 1,
                             wordBreak: "break-all" as const
                           }}>
-                            {uuid}
+                            {uuidContent}
                           </code>
                           <button
                             onClick={(e) => {
@@ -834,15 +877,6 @@ const UUIDGenerator: React.FC = () => {
                               </svg>
                             )}
                           </button>
-                          {inspectorExpanded && isSelected ? (
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-                              <path d="M4 10L8 6L12 10" stroke="#0B63E9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          ) : (
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
-                              <path d="M4 6L8 10L12 6" stroke="#6c757d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                          )}
                         </div>
                         {timestampInfo && (
                           <div style={{ 

@@ -17,18 +17,9 @@ const App: React.FC = () => {
             box-sizing: border-box;
           }
           
-          /* Ensure proper scrolling in iframe contexts */
           .uuid-widget {
-            height: 100% !important;
-            min-height: 100% !important;
-          }
-          
-          /* Ensure content area can scroll properly */
-          .uuid-widget > div:last-child {
-            height: 100% !important;
-            min-height: 100% !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
+            height: 100%;
+            min-height: 0;
           }
         `}
       </style>

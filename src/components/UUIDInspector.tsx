@@ -10,27 +10,6 @@ const styles = {
     borderRadius: 8,
     fontFamily: "Inter, sans-serif",
   } as React.CSSProperties,
-  heading: {
-    fontWeight: 600,
-    fontSize: 14,
-    color: "#495057",
-    marginBottom: 12,
-  } as React.CSSProperties,
-  uuidLine: {
-    fontFamily: "monospace",
-    fontSize: 14,
-    color: "#495057",
-    marginBottom: 16,
-    lineHeight: 1.6,
-    wordBreak: "break-all" as const,
-  } as React.CSSProperties,
-  segment: (active: boolean) =>
-    ({
-      padding: "1px 0",
-      backgroundColor: active ? "rgba(11, 99, 233, 0.2)" : "transparent",
-      color: active ? "#0B63E9" : "inherit",
-      transition: "background-color 0.15s, color 0.15s",
-    }) as React.CSSProperties,
   fieldList: {
     display: "flex",
     flexDirection: "column" as const,
@@ -82,15 +61,10 @@ export default function UUIDInspector({
   onFieldClick,
 }: UUIDInspectorProps) {
   const fields = useMemo(() => getUUIDv7Fields(uuid), [uuid]);
-  const activeField = useMemo(
-    () => fields?.find((f) => f.id === activeFieldId) ?? null,
-    [fields, activeFieldId]
-  );
 
   if (!fields || fields.length === 0) {
     return (
       <div style={styles.panel}>
-        <div style={styles.heading}>UUID v7 Inspector</div>
         <div style={{ ...styles.fieldMeta, color: "#6c757d" }}>
           Not a valid UUID v7. Inspector available when a UUID v7 is displayed.
         </div>
@@ -98,33 +72,11 @@ export default function UUIDInspector({
     );
   }
 
-  const highlightedRanges = new Set<string>();
-  if (activeField) {
-    for (const [a, b] of activeField.ranges) {
-      for (let i = a; i < b; i++) highlightedRanges.add(String(i));
-    }
-  }
-
-  const uuidWithHighlights = (() => {
-    const out: React.ReactNode[] = [];
-    for (let i = 0; i < uuid.length; i++) {
-      const active = highlightedRanges.has(String(i));
-      out.push(
-        <span key={i} style={styles.segment(active)}>
-          {uuid[i]}
-        </span>
-      );
-    }
-    return out;
-  })();
-
   return (
     <div style={styles.panel}>
-      <div style={styles.heading}>UUID v7 Inspector</div>
       <div style={{ fontSize: 12, color: "#6c757d", marginBottom: 12, fontStyle: "italic" }}>
-        Click a field to highlight it in the UUID and see bit-level details.
+        Click a field to highlight it in the UUID above and see bit-level details.
       </div>
-      <div style={styles.uuidLine}>{uuidWithHighlights}</div>
       <div style={styles.fieldList}>
         {fields.map((f) => {
           const active = f.id === activeFieldId;

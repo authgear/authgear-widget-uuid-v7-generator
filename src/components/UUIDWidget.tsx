@@ -31,16 +31,10 @@ const tabStyles = {
   content: {
     flex: 1,
     minHeight: 0,
-    overflow: "hidden",
+    overflowY: "auto",
+    overflowX: "hidden",
     padding: "16px",
     boxSizing: "border-box",
-    display: "flex",
-    flexDirection: "column",
-  } as React.CSSProperties,
-  contentInner: {
-    flex: 1,
-    minHeight: 0,
-    overflow: "auto",
   } as React.CSSProperties,
 };
 
@@ -83,10 +77,8 @@ const UUIDWidget: React.FC = () => {
         ))}
       </div>
       <div style={tabStyles.content}>
-        <div style={tabStyles.contentInner}>
-          {activeTab === "uuid-v7" && <UUIDGenerator />}
-          {activeTab === "timestamp-extraction" && <TimestampExtractionTool />}
-        </div>
+        {activeTab === "uuid-v7" && <UUIDGenerator />}
+        {activeTab === "timestamp-extraction" && <TimestampExtractionTool />}
       </div>
     </div>
   );
