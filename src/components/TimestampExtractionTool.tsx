@@ -80,6 +80,20 @@ const styles = {
     color: "#fff",
     border: "1px solid #0B63E9",
   } as React.CSSProperties,
+  statusPill: (valid: boolean) =>
+    ({
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 6,
+      padding: "4px 10px",
+      borderRadius: 9999,
+      fontSize: 12,
+      fontWeight: 500,
+      fontFamily: "Inter, sans-serif",
+      ...(valid
+        ? { backgroundColor: "#d4edda", color: "#155724" }
+        : { backgroundColor: "#f8d7da", color: "#721c24" }),
+    }) as React.CSSProperties,
 };
 
 const CopyIcon = () => (
@@ -91,6 +105,12 @@ const CopyIcon = () => (
 const CheckIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor" />
+  </svg>
+);
+
+const InvalidIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z" fill="currentColor" />
   </svg>
 );
 
@@ -162,7 +182,15 @@ const TimestampExtractionTool: React.FC = () => {
           flexDirection: "column",
         }}
       >
-        <label style={styles.label}>UUID string</label>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+          <label style={styles.label}>UUID string</label>
+          {trimmed.length > 0 && (
+            <span style={styles.statusPill(isValid === true)}>
+              {isValid ? <CheckIcon /> : <InvalidIcon />}
+              {isValid ? "Valid UUID v7" : "Invalid UUID v7"}
+            </span>
+          )}
+        </div>
         <input
           type="text"
           value={input}
