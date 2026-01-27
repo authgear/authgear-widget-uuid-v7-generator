@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 
 import { generateUUIDv7, parseUUIDv7Timestamp, formatUUID } from "../utils/uuidUtils";
 import DateTimePicker from "./DateTimePicker";
+import UUIDInspector from "./UUIDInspector";
 
 // Styles
 const styles = {
@@ -126,6 +127,9 @@ const UUIDGenerator: React.FC = () => {
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
   const [copiedUUIDIndex, setCopiedUUIDIndex] = useState<number | null>(null);
   const [error, setError] = useState<string>("");
+  const [selectedUUIDIndex, setSelectedUUIDIndex] = useState<number>(0);
+  const [inspectorExpanded, setInspectorExpanded] = useState<boolean>(false);
+  const [inspectorClickedId, setInspectorClickedId] = useState<string | null>(null);
 
   // Generate 1 UUID on component mount
   useEffect(() => {
@@ -200,6 +204,9 @@ const UUIDGenerator: React.FC = () => {
     setError("");
     setCopySuccess(false);
     setCopiedUUIDIndex(null);
+    setSelectedUUIDIndex(0);
+    setInspectorExpanded(false);
+    setInspectorClickedId(null);
 
     let timestamp: number | undefined = undefined;
 
@@ -301,7 +308,7 @@ const UUIDGenerator: React.FC = () => {
     <div style={{ 
       fontFamily: "Inter, sans-serif", 
       color: "#495057", 
-      padding: "16px", 
+      padding: 0, 
       width: "100%", 
       height: "100%", 
       boxSizing: "border-box", 
@@ -328,22 +335,31 @@ const UUIDGenerator: React.FC = () => {
         }}>
           <div style={{ marginBottom: 16 }}>
             <label style={styles.label}>Number of UUIDs to generate</label>
-            <select
+            <input
+              type="number"
+              min="1"
+              max="10"
               value={count}
               onChange={(e) => {
                 const value = parseInt(e.target.value, 10);
                 if (!isNaN(value) && value >= 1 && value <= 10) {
                   setCount(value);
+                } else if (e.target.value === '') {
+                  // Allow empty input temporarily for better UX
+                  setCount(1);
+                }
+              }}
+              onBlur={(e) => {
+                // Ensure value is within range when input loses focus
+                const value = parseInt(e.target.value, 10);
+                if (isNaN(value) || value < 1) {
+                  setCount(1);
+                } else if (value > 10) {
+                  setCount(10);
                 }
               }}
               style={styles.input}
-            >
-              {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => (
-                <option key={num} value={num}>
-                  {num}
-                </option>
-              ))}
-            </select>
+            />
             <div style={{ 
               marginTop: 4, 
               fontSize: "12px", 
@@ -739,6 +755,7 @@ const UUIDGenerator: React.FC = () => {
                 }}>
                   {generatedUUIDs.map((uuid, index) => {
                     const timestampInfo = getTimestampInfo(uuid);
+                    const isSelected = selectedUUIDIndex === index;
                     return (
                       <div 
                         key={index} 
@@ -746,12 +763,39 @@ const UUIDGenerator: React.FC = () => {
                           marginBottom: index < generatedUUIDs.length - 1 ? "12px" : 0
                         }}
                       >
-                      <div style={{
-                        padding: "12px",
-                        backgroundColor: "#f8f9fa",
-                        border: "1px solid #e9ecef",
-                        borderRadius: "4px"
-                      }}>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => {
+                          if (selectedUUIDIndex === index && inspectorExpanded) {
+                            // Clicking same UUID when Inspector is open → collapse it
+                            setInspectorExpanded(false);
+                          } else {
+                            // Clicking different UUID or Inspector is closed → select and expand
+                            setSelectedUUIDIndex(index);
+                            setInspectorExpanded(true);
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            if (selectedUUIDIndex === index && inspectorExpanded) {
+                              setInspectorExpanded(false);
+                            } else {
+                              setSelectedUUIDIndex(index);
+                              setInspectorExpanded(true);
+                            }
+                          }
+                        }}
+                        style={{
+                          padding: "12px",
+                          backgroundColor: "#f8f9fa",
+                          border: `1px solid ${isSelected && inspectorExpanded ? "#0B63E9" : "#e9ecef"}`,
+                          borderRadius: "4px",
+                          cursor: "pointer",
+                          transition: "border-color 0.2s"
+                        }}
+                      >
                         <div style={{ 
                           display: "flex", 
                           alignItems: "center", 
@@ -768,7 +812,10 @@ const UUIDGenerator: React.FC = () => {
                             {uuid}
                           </code>
                           <button
-                            onClick={() => handleCopy(uuid, index)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCopy(uuid, index);
+                            }}
                             style={{
                               ...styles.copyButton,
                               ...(copiedUUIDIndex === index ? styles.copyButtonSuccess : {}),
@@ -787,6 +834,15 @@ const UUIDGenerator: React.FC = () => {
                               </svg>
                             )}
                           </button>
+                          {inspectorExpanded && isSelected ? (
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                              <path d="M4 10L8 6L12 10" stroke="#0B63E9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          ) : (
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+                              <path d="M4 6L8 10L12 6" stroke="#6c757d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                            </svg>
+                          )}
                         </div>
                         {timestampInfo && (
                           <div style={{ 
@@ -799,6 +855,15 @@ const UUIDGenerator: React.FC = () => {
                           </div>
                         )}
                       </div>
+                      {inspectorExpanded && isSelected && (
+                        <div style={{ marginTop: "12px" }}>
+                          <UUIDInspector
+                            uuid={uuid}
+                            activeFieldId={inspectorClickedId}
+                            onFieldClick={(id) => setInspectorClickedId((prev) => (prev === id ? null : id))}
+                          />
+                        </div>
+                      )}
                     </div>
                     );
                   })}

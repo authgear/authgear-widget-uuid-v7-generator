@@ -135,3 +135,110 @@ export function formatUUID(uuid: string, format: 'standard' | 'uppercase' | 'no-
       return uuid.toLowerCase();
   }
 }
+
+/** UUID v7 field for Inspector */
+export interface UUIDv7Field {
+  id: string;
+  name: string;
+  bits: number;
+  /** Hex substring (no hyphens) for this field */
+  hex: string;
+  /** Binary representation */
+  binary: string;
+  /** Ranges [start, end] in hyphenated UUID string (end exclusive) for highlighting */
+  ranges: [number, number][];
+}
+
+/** Hex index → UUID string index. UUID format: xxxxxxxx-xxxx-7xxx-xxxx-xxxxxxxxxxxx */
+const HEX_TO_UUID_SEGMENTS: { hStart: number; hEnd: number; uStart: number; uEnd: number }[] = [
+  { hStart: 0, hEnd: 8, uStart: 0, uEnd: 8 },
+  { hStart: 8, hEnd: 12, uStart: 9, uEnd: 13 },
+  { hStart: 12, hEnd: 16, uStart: 14, uEnd: 18 },
+  { hStart: 16, hEnd: 20, uStart: 19, uEnd: 23 },
+  { hStart: 20, hEnd: 32, uStart: 24, uEnd: 36 },
+];
+
+function hexRangeToUUIDRanges(hexStart: number, hexEnd: number): [number, number][] {
+  const ranges: [number, number][] = [];
+  let i = hexStart;
+  while (i < hexEnd) {
+    const seg = HEX_TO_UUID_SEGMENTS.find((s) => i >= s.hStart && i < s.hEnd);
+    if (!seg) break;
+    const j = Math.min(hexEnd, seg.hEnd);
+    const uStart = seg.uStart + (i - seg.hStart);
+    const uEnd = seg.uEnd - (seg.hEnd - j);
+    ranges.push([uStart, uEnd]);
+    i = j;
+  }
+  return ranges;
+}
+
+/**
+ * Parse UUID v7 into RFC 9562 / 4122 fields for Inspector.
+ * Layout: 48b timestamp | 4b version | 12b rand | 2b variant | 62b random
+ */
+export function getUUIDv7Fields(uuid: string): UUIDv7Field[] | null {
+  const normalized = uuid.replace(/-/g, '').toLowerCase();
+  if (normalized.length !== 32) return null;
+  const re = /^[0-9a-f]{8}[0-9a-f]{4}7[0-9a-f]{3}[89ab][0-9a-f]{3}[0-9a-f]{12}$/;
+  if (!re.test(normalized)) return null;
+
+  const hexToBinary = (hex: string) =>
+    hex.split('').map((c) => parseInt(c, 16).toString(2).padStart(4, '0')).join('');
+
+  const tsHex = normalized.substring(0, 12);
+  const verHex = normalized.substring(12, 13);
+  const rand12Hex = normalized.substring(13, 16);
+  const varHex = normalized.substring(16, 17);
+  const rand62Hex = normalized.substring(17, 32); // 15 hex = 60 bits; 2 bits from var nibble
+
+  const variantBits = (parseInt(varHex, 16) >> 2) & 0x3;
+  const variantBinary = variantBits.toString(2).padStart(2, '0');
+  const rand62LowBits = (parseInt(varHex, 16) >> 0) & 0x3;
+  const rand62Bin = rand62LowBits.toString(2).padStart(2, '0') + hexToBinary(rand62Hex);
+
+  const fields: UUIDv7Field[] = [
+    {
+      id: 'timestamp',
+      name: 'Unix timestamp (ms)',
+      bits: 48,
+      hex: tsHex,
+      binary: hexToBinary(tsHex),
+      ranges: hexRangeToUUIDRanges(0, 12),
+    },
+    {
+      id: 'version',
+      name: 'Version (v7)',
+      bits: 4,
+      hex: verHex,
+      binary: hexToBinary(verHex),
+      ranges: hexRangeToUUIDRanges(12, 13),
+    },
+    {
+      id: 'rand_after_version',
+      name: 'Random / sequence (12 bits)',
+      bits: 12,
+      hex: rand12Hex,
+      binary: hexToBinary(rand12Hex),
+      ranges: hexRangeToUUIDRanges(13, 16),
+    },
+    {
+      id: 'variant',
+      name: 'Variant (RFC 4122)',
+      bits: 2,
+      hex: variantBits.toString(16),
+      binary: variantBinary,
+      ranges: hexRangeToUUIDRanges(16, 17),
+    },
+    {
+      id: 'rand_remaining',
+      name: 'Random (62 bits)',
+      bits: 62,
+      hex: rand62Hex,
+      binary: rand62Bin,
+      ranges: hexRangeToUUIDRanges(16, 32),
+    },
+  ];
+
+  return fields;
+}
