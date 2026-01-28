@@ -59,9 +59,11 @@ const styles = {
 
 interface UUIDInspectorProps {
   uuid: string;
+  onFieldMouseEnter?: (fieldIndex: number) => void;
+  onFieldMouseLeave?: () => void;
 }
 
-export default function UUIDInspector({ uuid }: UUIDInspectorProps) {
+export default function UUIDInspector({ uuid, onFieldMouseEnter, onFieldMouseLeave }: UUIDInspectorProps) {
   const fields = useMemo(() => getUUIDv7Fields(uuid), [uuid]);
 
   if (!fields || fields.length === 0) {
@@ -83,7 +85,12 @@ export default function UUIDInspector({ uuid }: UUIDInspectorProps) {
         {fields.map((f, idx) => {
           const color: string = FIELD_COLORS[idx % FIELD_COLORS.length] ?? "rgba(11, 99, 233, 0.25)";
           return (
-            <div key={f.id} style={styles.fieldRow(color)}>
+            <div
+              key={f.id}
+              style={styles.fieldRow(color)}
+              onMouseEnter={() => onFieldMouseEnter?.(idx)}
+              onMouseLeave={onFieldMouseLeave}
+            >
               <div style={styles.fieldName}>
                 <span style={{
                   width: 10,

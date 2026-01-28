@@ -129,6 +129,7 @@ const UUIDGenerator: React.FC = () => {
   const [error, setError] = useState<string>("");
   const [selectedUUIDIndex, setSelectedUUIDIndex] = useState<number | null>(null);
   const [inspectorCopySuccess, setInspectorCopySuccess] = useState(false);
+  const [hoveredFieldIndex, setHoveredFieldIndex] = useState<number | null>(null);
 
   const handleInspectorCopy = async (uuid: string) => {
     try {
@@ -140,10 +141,11 @@ const UUIDGenerator: React.FC = () => {
     }
   };
 
-  // Generate 1 UUID on component mount
+  // Generate 1 UUID on component mount and select it in the inspector
   useEffect(() => {
     const uuid = generateUUIDv7();
     setGeneratedUUIDs([formatUUID(uuid, format)]);
+    setSelectedUUIDIndex(0);
   }, []);
 
   // Helper function to parse timestamp from different formats
@@ -249,6 +251,7 @@ const UUIDGenerator: React.FC = () => {
       uuids.push(formatUUID(uuid, format));
     }
     setGeneratedUUIDs(uuids);
+    setSelectedUUIDIndex(0);
   };
 
   const handleCopy = async (uuid: string, index: number) => {
@@ -758,16 +761,6 @@ const UUIDGenerator: React.FC = () => {
                           gap: "8px",
                           marginBottom: timestampInfo ? "8px" : "0"
                         }}>
-                          <span
-                            style={{ flexShrink: 0, display: "flex", alignItems: "center", color: "#6c757d" }}
-                            title="Select to view in inspector"
-                            aria-hidden
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="12" r="10" />
-                              <path d="M12 16v-4M12 8h.01" />
-                            </svg>
-                          </span>
                           <code style={{ 
                             fontSize: "14px",
                             color: "#495057",
@@ -860,42 +853,84 @@ const UUIDGenerator: React.FC = () => {
                   }
                 });
               }
-              const uuidContent = uuid.split("").map((ch, i) => {
+              const isHovered = (fi: number) => hoveredFieldIndex !== null && fi === hoveredFieldIndex;
+              const charHovered = (i: number) => (charToFieldIndices[i] || []).some(fi => isHovered(fi));
+              const getCharStyle = (i: number): { bg: string; color: string } => {
                 const fieldIndices = charToFieldIndices[i] || [];
-                let bg: string = "transparent";
-                let extraStyle: React.CSSProperties = {};
-                
+                let bg = "transparent";
                 if (fieldIndices.length === 1 && fieldIndices[0] !== undefined) {
-                  // Single field - solid color
-                  const color = FIELD_COLORS[fieldIndices[0] % FIELD_COLORS.length];
-                  bg = color || "transparent";
+                  bg = FIELD_COLORS[fieldIndices[0] % FIELD_COLORS.length] || "transparent";
                 } else if (fieldIndices.length > 1) {
-                  // Multiple fields - use split diagonal pattern for clarity
                   const colors = fieldIndices
                     .map(fi => FIELD_COLORS[fi % FIELD_COLORS.length])
                     .filter((c): c is string => !!c);
                   if (colors.length === 2) {
-                    // Clean diagonal split for 2 overlapping fields
                     bg = `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)`;
                   } else if (colors.length > 2) {
-                    // More than 2: use stripes
                     bg = `linear-gradient(to right, ${colors.join(", ")})`;
                   }
                 }
-                
-                return (
-                  <span
-                    key={i}
-                    style={{
-                      padding: "1px 0",
-                      background: bg,
-                      color: fieldIndices.length > 0 ? "#1e293b" : "inherit",
-                      ...extraStyle,
-                    }}
-                  >
-                    {ch}
-                  </span>
-                );
+                return { bg, color: fieldIndices.length > 0 ? "#1e293b" : "inherit" };
+              };
+
+              const runs: { start: number; end: number; hovered: boolean }[] = [];
+              let i = 0;
+              while (i < uuid.length) {
+                const h = charHovered(i);
+                const start = i;
+                while (i < uuid.length && charHovered(i) === h) i++;
+                runs.push({ start, end: i, hovered: h });
+              }
+
+              const uuidContent = runs.flatMap((r) => {
+                if (r.hovered) {
+                  return [
+                    <span
+                      key={`ring-${r.start}`}
+                      style={{
+                        border: "2px solid #0B63E9",
+                        borderRadius: "6px",
+                        padding: "0 1px",
+                        display: "inline",
+                        transition: "border-color 0.15s, box-shadow 0.15s",
+                      }}
+                    >
+                      {uuid.slice(r.start, r.end).split("").map((ch, j) => {
+                        const idx = r.start + j;
+                        return (
+                          <span
+                            key={idx}
+                            style={{
+                              padding: "1px 0",
+                              background: "transparent",
+                              color: "#1e293b",
+                            }}
+                          >
+                            {ch}
+                          </span>
+                        );
+                      })}
+                    </span>,
+                  ];
+                }
+                const dimmed = hoveredFieldIndex !== null;
+                return uuid.slice(r.start, r.end).split("").map((ch, j) => {
+                  const idx = r.start + j;
+                  const { bg, color } = getCharStyle(idx);
+                  return (
+                    <span
+                      key={idx}
+                      style={{
+                        padding: "1px 0",
+                        background: dimmed ? "rgba(0,0,0,0.04)" : bg,
+                        color: dimmed ? "#adb5bd" : color,
+                        transition: "color 0.15s, background 0.15s",
+                      }}
+                    >
+                      {ch}
+                    </span>
+                  );
+                });
               });
               return (
                 <div>
@@ -923,10 +958,10 @@ const UUIDGenerator: React.FC = () => {
                       title={inspectorCopySuccess ? "Copied!" : "Copy UUID"}
                       style={{
                         flexShrink: 0,
-                        padding: "6px 12px",
-                        fontSize: 13,
-                        fontWeight: 500,
-                        fontFamily: "Inter, sans-serif",
+                        padding: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         border: "1px solid #dee2e6",
                         borderRadius: 4,
                         background: inspectorCopySuccess ? "#0B63E9" : "#f8f9fa",
@@ -935,10 +970,22 @@ const UUIDGenerator: React.FC = () => {
                         transition: "background 0.2s, color 0.2s"
                       }}
                     >
-                      {inspectorCopySuccess ? "Copied!" : "Copy"}
+                      {inspectorCopySuccess ? (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" fill="currentColor"/>
+                        </svg>
+                      ) : (
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M16 1H4C2.9 1 2 1.9 2 3V17H4V3H16V1ZM19 5H8C6.9 5 6 5.9 6 7V21C6 22.1 6.9 23 8 23H19C20.1 23 21 22.1 21 21V7C21 5.9 20.1 5 19 5ZM19 21H8V7H19V21Z" fill="currentColor"/>
+                        </svg>
+                      )}
                     </button>
                   </div>
-                  <UUIDInspector uuid={uuid} />
+                  <UUIDInspector
+                    uuid={uuid}
+                    onFieldMouseEnter={setHoveredFieldIndex}
+                    onFieldMouseLeave={() => setHoveredFieldIndex(null)}
+                  />
                 </div>
               );
             })()
