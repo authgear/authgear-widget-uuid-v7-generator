@@ -7,6 +7,10 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "start": "npm run build && npm run preview",
+    "serve": "node scripts/serve.js",
+    "run": "npm run build && npm run serve",
+    "open": "npm run build && open dist/index.html",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {

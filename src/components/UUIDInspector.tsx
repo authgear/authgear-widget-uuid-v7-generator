@@ -1,6 +1,15 @@
 import React, { useMemo } from "react";
 import { getUUIDv7Fields } from "../utils/uuidUtils";
 
+/** Match colors used in UUID highlight (timestamp, version, rand12, variant, random62) */
+const FIELD_COLORS = [
+  "rgba(11, 99, 233, 0.25)",   // timestamp – blue
+  "rgba(34, 197, 94, 0.25)",   // version – green
+  "rgba(234, 179, 8, 0.3)",    // rand 12 – yellow
+  "rgba(249, 115, 22, 0.3)",   // variant – orange
+  "rgba(20, 184, 166, 0.25)",  // random 62 – teal
+];
+
 const styles = {
   panel: {
     marginTop: 12,
@@ -15,24 +24,24 @@ const styles = {
     flexDirection: "column" as const,
     gap: 8,
   } as React.CSSProperties,
-  fieldRow: (active: boolean) =>
+  fieldRow: (color: string) =>
     ({
       display: "flex",
-      flexWrap: "wrap" as const,
-      gap: 8,
-      alignItems: "center",
+      flexDirection: "column" as const,
+      gap: 4,
       padding: "10px 12px",
       borderRadius: 6,
-      border: `1px solid ${active ? "rgba(11, 99, 233, 0.35)" : "#e9ecef"}`,
-      backgroundColor: active ? "rgba(11, 99, 233, 0.04)" : "#fff",
-      cursor: "pointer",
-      transition: "all 0.15s",
+      borderLeft: `4px solid ${color}`,
+      backgroundColor: "#fff",
+      border: "1px solid #e9ecef",
     }) as React.CSSProperties,
   fieldName: {
     fontWeight: 600,
     fontSize: 13,
     color: "#212529",
-    flex: "1 1 100%",
+    display: "flex",
+    alignItems: "center",
+    gap: 6,
   } as React.CSSProperties,
   fieldMeta: {
     fontSize: 12,
@@ -45,21 +54,15 @@ const styles = {
     fontFamily: "monospace",
     wordBreak: "break-all" as const,
     width: "100%",
-    marginTop: 4,
+    marginTop: 2,
   } as React.CSSProperties,
 };
 
 interface UUIDInspectorProps {
   uuid: string;
-  activeFieldId: string | null;
-  onFieldClick: (id: string | null) => void;
 }
 
-export default function UUIDInspector({
-  uuid,
-  activeFieldId,
-  onFieldClick,
-}: UUIDInspectorProps) {
+export default function UUIDInspector({ uuid }: UUIDInspectorProps) {
   const fields = useMemo(() => getUUIDv7Fields(uuid), [uuid]);
 
   if (!fields || fields.length === 0) {
@@ -75,30 +78,27 @@ export default function UUIDInspector({
   return (
     <div style={styles.panel}>
       <div style={{ fontSize: 12, color: "#6c757d", marginBottom: 12, fontStyle: "italic" }}>
-        Click a field to highlight it in the UUID above and see bit-level details.
+        Field colors match the segments in the UUID above.
       </div>
       <div style={styles.fieldList}>
-        {fields.map((f) => {
-          const active = f.id === activeFieldId;
+        {fields.map((f, idx) => {
+          const color: string = FIELD_COLORS[idx % FIELD_COLORS.length] ?? "rgba(11, 99, 233, 0.25)";
           return (
-            <div
-              key={f.id}
-              style={styles.fieldRow(active)}
-              onClick={() => onFieldClick(active ? null : f.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onFieldClick(active ? null : f.id);
-                }
-              }}
-            >
-              <div style={styles.fieldName}>{f.name}</div>
+            <div key={f.id} style={styles.fieldRow(color)}>
+              <div style={styles.fieldName}>
+                <span style={{
+                  width: 10,
+                  height: 10,
+                  borderRadius: 2,
+                  backgroundColor: color,
+                  flexShrink: 0
+                }} />
+                <span>{f.name}</span>
+              </div>
               <div style={styles.fieldMeta}>
                 {f.bits} bits · hex: {f.hex}
               </div>
-              {active && <div style={styles.fieldBinary}>binary: {f.binary}</div>}
+              <div style={styles.fieldBinary}>binary: {f.binary}</div>
             </div>
           );
         })}

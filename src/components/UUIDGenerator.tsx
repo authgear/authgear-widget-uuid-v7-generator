@@ -127,9 +127,7 @@ const UUIDGenerator: React.FC = () => {
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
   const [copiedUUIDIndex, setCopiedUUIDIndex] = useState<number | null>(null);
   const [error, setError] = useState<string>("");
-  const [selectedUUIDIndex, setSelectedUUIDIndex] = useState<number>(0);
-  const [inspectorExpanded, setInspectorExpanded] = useState<boolean>(false);
-  const [inspectorClickedId, setInspectorClickedId] = useState<string | null>(null);
+  const [selectedUUIDIndex, setSelectedUUIDIndex] = useState<number | null>(null);
 
   // Generate 1 UUID on component mount
   useEffect(() => {
@@ -204,9 +202,7 @@ const UUIDGenerator: React.FC = () => {
     setError("");
     setCopySuccess(false);
     setCopiedUUIDIndex(null);
-    setSelectedUUIDIndex(0);
-    setInspectorExpanded(false);
-    setInspectorClickedId(null);
+    setSelectedUUIDIndex(null);
 
     let timestamp: number | undefined = undefined;
 
@@ -333,31 +329,15 @@ const UUIDGenerator: React.FC = () => {
         }}>
           <div style={{ marginBottom: 16 }}>
             <label style={styles.label}>Number of UUIDs to generate</label>
-            <input
-              type="number"
-              min="1"
-              max="10"
+            <select
               value={count}
-              onChange={(e) => {
-                const value = parseInt(e.target.value, 10);
-                if (!isNaN(value) && value >= 1 && value <= 10) {
-                  setCount(value);
-                } else if (e.target.value === '') {
-                  // Allow empty input temporarily for better UX
-                  setCount(1);
-                }
-              }}
-              onBlur={(e) => {
-                // Ensure value is within range when input loses focus
-                const value = parseInt(e.target.value, 10);
-                if (isNaN(value) || value < 1) {
-                  setCount(1);
-                } else if (value > 10) {
-                  setCount(10);
-                }
-              }}
+              onChange={(e) => setCount(parseInt(e.target.value, 10))}
               style={styles.input}
-            />
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
             <div style={{ 
               marginTop: 4, 
               fontSize: "12px", 
@@ -688,23 +668,10 @@ const UUIDGenerator: React.FC = () => {
               <strong>Error:</strong> {error}
             </div>
           )}
-        </div>
 
-        {/* Right Column: Generated UUIDs Output */}
-        <div style={{ 
-          flex: "1 1 400px",
-          minWidth: "280px",
-          width: "100%",
-          padding: "20px",
-          border: "1px solid #dee2e6",
-          borderRadius: "8px",
-          backgroundColor: "#ffffff",
-          boxSizing: "border-box" as const,
-          display: "flex",
-          flexDirection: "column"
-        }}>
-          {generatedUUIDs.length > 0 ? (
-            <>
+          {/* Generated UUIDs List */}
+          {generatedUUIDs.length > 0 && (
+            <div style={{ marginTop: 24 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
                 <label style={styles.label}>
                   Generated UUIDs ({generatedUUIDs.length})
@@ -744,77 +711,31 @@ const UUIDGenerator: React.FC = () => {
                   </button>
                 )}
               </div>
-              <div style={styles.outputContainer}>
-                <div style={{
-                  ...styles.output,
-                  border: "none",
-                  padding: 0,
-                  backgroundColor: "transparent"
-                }}>
-                  {generatedUUIDs.map((uuid, index) => {
-                    const timestampInfo = getTimestampInfo(uuid);
-                    const isSelected = selectedUUIDIndex === index;
-                    const showHighlight =
-                      isSelected && inspectorExpanded && inspectorClickedId != null;
-                    const fields = showHighlight ? getUUIDv7Fields(uuid) : null;
-                    const activeField = fields?.find((f) => f.id === inspectorClickedId) ?? null;
-                    const highlightSet = new Set<string>();
-                    if (activeField) {
-                      for (const [a, b] of activeField.ranges) {
-                        for (let i = a; i < b; i++) highlightSet.add(String(i));
-                      }
-                    }
-                    const uuidContent = showHighlight && activeField
-                      ? uuid.split("").map((ch, i) => (
-                          <span
-                            key={i}
-                            style={{
-                              padding: "1px 0",
-                              backgroundColor: highlightSet.has(String(i))
-                                ? "rgba(11, 99, 233, 0.2)"
-                                : "transparent",
-                              color: highlightSet.has(String(i)) ? "#0B63E9" : "inherit",
-                            }}
-                          >
-                            {ch}
-                          </span>
-                        ))
-                      : uuid;
-                    return (
-                      <div 
-                        key={index} 
-                        style={{ 
-                          marginBottom: index < generatedUUIDs.length - 1 ? "12px" : 0
-                        }}
-                      >
+              <div>
+                {generatedUUIDs.map((uuid, index) => {
+                  const timestampInfo = getTimestampInfo(uuid);
+                  const isSelected = selectedUUIDIndex === index;
+                  return (
+                    <div 
+                      key={index} 
+                      style={{ 
+                        marginBottom: index < generatedUUIDs.length - 1 ? "12px" : 0
+                      }}
+                    >
                       <div
                         role="button"
                         tabIndex={0}
-                        onClick={() => {
-                          if (selectedUUIDIndex === index && inspectorExpanded) {
-                            // Clicking same UUID when Inspector is open → collapse it
-                            setInspectorExpanded(false);
-                          } else {
-                            // Clicking different UUID or Inspector is closed → select and expand
-                            setSelectedUUIDIndex(index);
-                            setInspectorExpanded(true);
-                          }
-                        }}
+                        onClick={() => setSelectedUUIDIndex(index)}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
                             e.preventDefault();
-                            if (selectedUUIDIndex === index && inspectorExpanded) {
-                              setInspectorExpanded(false);
-                            } else {
-                              setSelectedUUIDIndex(index);
-                              setInspectorExpanded(true);
-                            }
+                            setSelectedUUIDIndex(index);
                           }
                         }}
                         style={{
                           padding: "12px",
                           backgroundColor: "#f8f9fa",
-                          border: `1px solid ${isSelected && inspectorExpanded ? "#0B63E9" : "#e9ecef"}`,
+                          border: `1px solid ${isSelected ? "#0B63E9" : "#e9ecef"}`,
                           borderRadius: "4px",
                           cursor: "pointer",
                           transition: "border-color 0.2s"
@@ -826,25 +747,6 @@ const UUIDGenerator: React.FC = () => {
                           gap: "8px",
                           marginBottom: timestampInfo ? "8px" : "0"
                         }}>
-                          <span
-                            style={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              flexShrink: 0,
-                              color: inspectorExpanded && isSelected ? "#0B63E9" : "#6c757d",
-                            }}
-                            title={inspectorExpanded && isSelected ? "Hide details" : "See more details"}
-                          >
-                            {inspectorExpanded && isSelected ? (
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 10L8 6L12 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            ) : (
-                              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                              </svg>
-                            )}
-                          </span>
                           <code style={{ 
                             fontSize: "14px",
                             color: "#495057",
@@ -852,7 +754,7 @@ const UUIDGenerator: React.FC = () => {
                             flex: 1,
                             wordBreak: "break-all" as const
                           }}>
-                            {uuidContent}
+                            {uuid}
                           </code>
                           <button
                             onClick={(e) => {
@@ -889,37 +791,109 @@ const UUIDGenerator: React.FC = () => {
                           </div>
                         )}
                       </div>
-                      {inspectorExpanded && isSelected && (
-                        <div style={{ marginTop: "12px" }}>
-                          <UUIDInspector
-                            uuid={uuid}
-                            activeFieldId={inspectorClickedId}
-                            onFieldClick={(id) => setInspectorClickedId((prev) => (prev === id ? null : id))}
-                          />
-                        </div>
-                      )}
                     </div>
-                    );
-                  })}
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right Column: UUID Inspector */}
+        <div style={{ 
+          flex: "1 1 400px",
+          minWidth: "280px",
+          width: "100%",
+          padding: "20px",
+          border: "1px solid #dee2e6",
+          borderRadius: "8px",
+          backgroundColor: "#ffffff",
+          boxSizing: "border-box" as const,
+          display: "flex",
+          flexDirection: "column"
+        }}>
+          {selectedUUIDIndex !== null && generatedUUIDs[selectedUUIDIndex] ? (
+            (() => {
+              const uuid = generatedUUIDs[selectedUUIDIndex!];
+              if (!uuid) return null;
+              const fields = getUUIDv7Fields(uuid);
+              // Map each character index to field indices (can have multiple for overlapping)
+              const FIELD_COLORS = [
+                "rgba(11, 99, 233, 0.25)",   // timestamp – blue
+                "rgba(34, 197, 94, 0.25)",   // version – green
+                "rgba(234, 179, 8, 0.3)",    // rand 12 – yellow
+                "rgba(249, 115, 22, 0.3)",   // variant – orange
+                "rgba(20, 184, 166, 0.25)",  // random 62 – teal
+              ];
+              const charToFieldIndices: number[][] = new Array(uuid.length).fill(null).map(() => []);
+              if (fields) {
+                fields.forEach((f, idx) => {
+                  for (const [a, b] of f.ranges) {
+                    for (let i = a; i < b; i++) {
+                      const arr = charToFieldIndices[i];
+                      if (arr && !arr.includes(idx)) {
+                        arr.push(idx);
+                      }
+                    }
+                  }
+                });
+              }
+              const uuidContent = uuid.split("").map((ch, i) => {
+                const fieldIndices = charToFieldIndices[i] || [];
+                let bg: string = "transparent";
+                
+                if (fieldIndices.length === 1 && fieldIndices[0] !== undefined) {
+                  // Single field - solid color
+                  const color = FIELD_COLORS[fieldIndices[0] % FIELD_COLORS.length];
+                  bg = color || "transparent";
+                } else if (fieldIndices.length > 1) {
+                  // Multiple fields - use gradient
+                  const colors = fieldIndices
+                    .map(fi => FIELD_COLORS[fi % FIELD_COLORS.length])
+                    .filter((c): c is string => !!c);
+                  if (colors.length > 0) {
+                    bg = `linear-gradient(to bottom, ${colors.join(", ")})`;
+                  }
+                }
+                
+                return (
+                  <span
+                    key={i}
+                    style={{
+                      padding: "1px 0",
+                      background: bg,
+                      color: fieldIndices.length > 0 ? "#1e293b" : "inherit",
+                    }}
+                  >
+                    {ch}
+                  </span>
+                );
+              });
+              return (
+                <div>
+                  <code style={{ 
+                    fontSize: "14px",
+                    color: "#495057",
+                    fontFamily: "monospace",
+                    display: "block",
+                    marginBottom: "16px",
+                    wordBreak: "break-all" as const
+                  }}>
+                    {uuidContent}
+                  </code>
+                  <UUIDInspector uuid={uuid} />
                 </div>
-              </div>
-            </>
+              );
+            })()
           ) : (
-            <>
-              <label style={styles.label}>Generated UUIDs</label>
-              <div style={{
-                marginTop: "12px",
-                padding: "40px 16px",
-                border: "1px dashed #dee2e6",
-                borderRadius: "4px",
-                backgroundColor: "#f8f9fa",
-                textAlign: "center" as const,
-                color: "#6c757d",
-                fontSize: "14px"
-              }}>
-                No UUIDs generated yet
-              </div>
-            </>
+            <div style={{
+              padding: "40px 16px",
+              textAlign: "center" as const,
+              color: "#6c757d",
+              fontSize: "14px"
+            }}>
+              Select a UUID from the left to inspect
+            </div>
           )}
         </div>
       </div>
