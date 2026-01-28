@@ -4,6 +4,18 @@ import { generateUUIDv7, parseUUIDv7Timestamp, formatUUID, getUUIDv7Fields } fro
 import DateTimePicker from "./DateTimePicker";
 import UUIDInspector from "./UUIDInspector";
 
+/** Segment hover border: darker blue for WCAG 2.1 non-text contrast (≥4.5:1 on white for 2px borders) */
+const SEGMENT_HIGHLIGHT_BORDER = "#0047AB";
+
+/** Segment fill colors: light tints with ≥4.5:1 contrast for text #1e293b (WCAG 2.1 AA). Order: timestamp, version, rand12, variant, random62. Random segments use softer tints. */
+const SEGMENT_COLORS = [
+  "#BFDBFE",  // timestamp – blue
+  "#DDD6FE",  // version – purple
+  "#FEF9C3",  // rand 12 – soft yellow
+  "#FED7AA",  // variant – orange
+  "#CCFBF1",  // random 62 – soft teal
+];
+
 // Styles
 const styles = {
   input: {
@@ -833,13 +845,7 @@ const UUIDGenerator: React.FC = () => {
               if (!uuid) return null;
               const fields = getUUIDv7Fields(uuid);
               // Map each character index to field indices (can have multiple for overlapping)
-              const FIELD_COLORS = [
-                "rgba(11, 99, 233, 0.25)",   // timestamp – blue
-                "rgba(168, 85, 247, 0.25)",  // version – purple
-                "rgba(234, 179, 8, 0.3)",    // rand 12 – yellow
-                "rgba(249, 115, 22, 0.3)",   // variant – orange
-                "rgba(20, 184, 166, 0.25)",  // random 62 – teal
-              ];
+              const FIELD_COLORS = SEGMENT_COLORS;
               const charToFieldIndices: number[][] = new Array(uuid.length).fill(null).map(() => []);
               if (fields) {
                 fields.forEach((f, idx) => {
@@ -888,7 +894,7 @@ const UUIDGenerator: React.FC = () => {
                     <span
                       key={`ring-${r.start}`}
                       style={{
-                        border: "2px solid #0B63E9",
+                        border: `2px solid ${SEGMENT_HIGHLIGHT_BORDER}`,
                         borderRadius: "6px",
                         padding: "0 1px",
                         display: "inline",

@@ -1,13 +1,13 @@
 import React, { useMemo } from "react";
 import { getUUIDv7Fields } from "../utils/uuidUtils";
 
-/** Match colors used in UUID highlight (timestamp, version, rand12, variant, random62) */
+/** Segment colors: same as UUID highlight, ≥4.5:1 with #1e293b (WCAG 2.1 AA). Random segments use softer tints. Order: timestamp, version, rand12, variant, random62. */
 const FIELD_COLORS = [
-  "rgba(11, 99, 233, 0.25)",   // timestamp – blue
-  "rgba(168, 85, 247, 0.25)",  // version – purple
-  "rgba(234, 179, 8, 0.3)",    // rand 12 – yellow
-  "rgba(249, 115, 22, 0.3)",   // variant – orange
-  "rgba(20, 184, 166, 0.25)",  // random 62 – teal
+  "#BFDBFE",  // timestamp – blue
+  "#DDD6FE",  // version – purple
+  "#FEF9C3",  // rand 12 – soft yellow
+  "#FED7AA",  // variant – orange
+  "#CCFBF1",  // random 62 – soft teal
 ];
 
 const styles = {
@@ -83,7 +83,7 @@ export default function UUIDInspector({ uuid, onFieldMouseEnter, onFieldMouseLea
       </div>
       <div style={styles.fieldList}>
         {fields.map((f, idx) => {
-          const color: string = FIELD_COLORS[idx % FIELD_COLORS.length] ?? "rgba(11, 99, 233, 0.25)";
+          const color: string = FIELD_COLORS[idx % FIELD_COLORS.length] ?? "#BFDBFE";
           return (
             <div
               key={f.id}
