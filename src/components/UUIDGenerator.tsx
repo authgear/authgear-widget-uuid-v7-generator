@@ -128,6 +128,17 @@ const UUIDGenerator: React.FC = () => {
   const [copiedUUIDIndex, setCopiedUUIDIndex] = useState<number | null>(null);
   const [error, setError] = useState<string>("");
   const [selectedUUIDIndex, setSelectedUUIDIndex] = useState<number | null>(null);
+  const [inspectorCopySuccess, setInspectorCopySuccess] = useState(false);
+
+  const handleInspectorCopy = async (uuid: string) => {
+    try {
+      await navigator.clipboard.writeText(uuid);
+      setInspectorCopySuccess(true);
+      setTimeout(() => setInspectorCopySuccess(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy UUID:", err);
+    }
+  };
 
   // Generate 1 UUID on component mount
   useEffect(() => {
@@ -747,11 +758,22 @@ const UUIDGenerator: React.FC = () => {
                           gap: "8px",
                           marginBottom: timestampInfo ? "8px" : "0"
                         }}>
+                          <span
+                            style={{ flexShrink: 0, display: "flex", alignItems: "center", color: "#6c757d" }}
+                            title="Select to view in inspector"
+                            aria-hidden
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="12" cy="12" r="10" />
+                              <path d="M12 16v-4M12 8h.01" />
+                            </svg>
+                          </span>
                           <code style={{ 
                             fontSize: "14px",
                             color: "#495057",
                             fontFamily: "monospace",
                             flex: 1,
+                            minWidth: 0,
                             wordBreak: "break-all" as const
                           }}>
                             {uuid}
@@ -820,7 +842,7 @@ const UUIDGenerator: React.FC = () => {
               // Map each character index to field indices (can have multiple for overlapping)
               const FIELD_COLORS = [
                 "rgba(11, 99, 233, 0.25)",   // timestamp – blue
-                "rgba(34, 197, 94, 0.25)",   // version – green
+                "rgba(168, 85, 247, 0.25)",  // version – purple
                 "rgba(234, 179, 8, 0.3)",    // rand 12 – yellow
                 "rgba(249, 115, 22, 0.3)",   // variant – orange
                 "rgba(20, 184, 166, 0.25)",  // random 62 – teal
@@ -841,18 +863,23 @@ const UUIDGenerator: React.FC = () => {
               const uuidContent = uuid.split("").map((ch, i) => {
                 const fieldIndices = charToFieldIndices[i] || [];
                 let bg: string = "transparent";
+                let extraStyle: React.CSSProperties = {};
                 
                 if (fieldIndices.length === 1 && fieldIndices[0] !== undefined) {
                   // Single field - solid color
                   const color = FIELD_COLORS[fieldIndices[0] % FIELD_COLORS.length];
                   bg = color || "transparent";
                 } else if (fieldIndices.length > 1) {
-                  // Multiple fields - use gradient
+                  // Multiple fields - use split diagonal pattern for clarity
                   const colors = fieldIndices
                     .map(fi => FIELD_COLORS[fi % FIELD_COLORS.length])
                     .filter((c): c is string => !!c);
-                  if (colors.length > 0) {
-                    bg = `linear-gradient(to bottom, ${colors.join(", ")})`;
+                  if (colors.length === 2) {
+                    // Clean diagonal split for 2 overlapping fields
+                    bg = `linear-gradient(135deg, ${colors[0]} 50%, ${colors[1]} 50%)`;
+                  } else if (colors.length > 2) {
+                    // More than 2: use stripes
+                    bg = `linear-gradient(to right, ${colors.join(", ")})`;
                   }
                 }
                 
@@ -863,6 +890,7 @@ const UUIDGenerator: React.FC = () => {
                       padding: "1px 0",
                       background: bg,
                       color: fieldIndices.length > 0 ? "#1e293b" : "inherit",
+                      ...extraStyle,
                     }}
                   >
                     {ch}
@@ -871,16 +899,45 @@ const UUIDGenerator: React.FC = () => {
               });
               return (
                 <div>
-                  <code style={{ 
-                    fontSize: "14px",
-                    color: "#495057",
-                    fontFamily: "monospace",
-                    display: "block",
-                    marginBottom: "16px",
-                    wordBreak: "break-all" as const
+                  <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 16,
+                    flexWrap: "wrap" as const,
+                    minWidth: 0
                   }}>
-                    {uuidContent}
-                  </code>
+                    <code style={{ 
+                      flex: "1 1 0",
+                      minWidth: 0,
+                      fontSize: "16px",
+                      color: "#495057",
+                      fontFamily: "monospace",
+                      wordBreak: "break-all" as const
+                    }}>
+                      {uuidContent}
+                    </code>
+                    <button
+                      type="button"
+                      onClick={() => handleInspectorCopy(uuid)}
+                      title={inspectorCopySuccess ? "Copied!" : "Copy UUID"}
+                      style={{
+                        flexShrink: 0,
+                        padding: "6px 12px",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        fontFamily: "Inter, sans-serif",
+                        border: "1px solid #dee2e6",
+                        borderRadius: 4,
+                        background: inspectorCopySuccess ? "#0B63E9" : "#f8f9fa",
+                        color: inspectorCopySuccess ? "#fff" : "#212529",
+                        cursor: "pointer",
+                        transition: "background 0.2s, color 0.2s"
+                      }}
+                    >
+                      {inspectorCopySuccess ? "Copied!" : "Copy"}
+                    </button>
+                  </div>
                   <UUIDInspector uuid={uuid} />
                 </div>
               );

@@ -4,7 +4,7 @@ import { getUUIDv7Fields } from "../utils/uuidUtils";
 /** Match colors used in UUID highlight (timestamp, version, rand12, variant, random62) */
 const FIELD_COLORS = [
   "rgba(11, 99, 233, 0.25)",   // timestamp – blue
-  "rgba(34, 197, 94, 0.25)",   // version – green
+  "rgba(168, 85, 247, 0.25)",  // version – purple
   "rgba(234, 179, 8, 0.3)",    // rand 12 – yellow
   "rgba(249, 115, 22, 0.3)",   // variant – orange
   "rgba(20, 184, 166, 0.25)",  // random 62 – teal
@@ -24,14 +24,13 @@ const styles = {
     flexDirection: "column" as const,
     gap: 8,
   } as React.CSSProperties,
-  fieldRow: (color: string) =>
+  fieldRow: (_color: string) =>
     ({
       display: "flex",
       flexDirection: "column" as const,
       gap: 4,
       padding: "10px 12px",
       borderRadius: 6,
-      borderLeft: `4px solid ${color}`,
       backgroundColor: "#fff",
       border: "1px solid #e9ecef",
     }) as React.CSSProperties,
