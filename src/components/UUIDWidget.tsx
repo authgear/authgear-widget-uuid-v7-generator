@@ -77,8 +77,12 @@ const UUIDWidget: React.FC = () => {
         ))}
       </div>
       <div style={tabStyles.content}>
-        {activeTab === "uuid-v7" && <UUIDGenerator />}
-        {activeTab === "timestamp-extraction" && <TimestampExtractionTool />}
+        <div style={{ display: activeTab === "uuid-v7" ? "block" : "none", height: "100%" }}>
+          <UUIDGenerator />
+        </div>
+        <div style={{ display: activeTab === "timestamp-extraction" ? "block" : "none", height: "100%" }}>
+          <TimestampExtractionTool />
+        </div>
       </div>
     </div>
   );
