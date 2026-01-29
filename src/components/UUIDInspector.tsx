@@ -78,6 +78,9 @@ export default function UUIDInspector({ uuid, onFieldMouseEnter, onFieldMouseLea
 
   return (
     <div style={styles.panel}>
+      <style>
+        {`.uuid-field-row:hover { background-color: #f8f9fa !important; }`}
+      </style>
       <div style={{ fontSize: 12, color: "#6c757d", marginBottom: 12, fontStyle: "italic" }}>
         Field colors match the segments in the UUID above.
       </div>
@@ -87,6 +90,7 @@ export default function UUIDInspector({ uuid, onFieldMouseEnter, onFieldMouseLea
           return (
             <div
               key={f.id}
+              className="uuid-field-row"
               style={styles.fieldRow(color)}
               onMouseEnter={() => onFieldMouseEnter?.(idx)}
               onMouseLeave={onFieldMouseLeave}
