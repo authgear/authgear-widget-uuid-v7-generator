@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UUIDGenerator from "./UUIDGenerator";
 import TimestampExtractionTool from "./TimestampExtractionTool";
 
@@ -13,6 +13,16 @@ const tabStyles = {
     paddingLeft: "16px",
     paddingRight: "16px",
     gap: "0",
+    alignItems: "center",
+    justifyContent: "space-between",
+  } as React.CSSProperties,
+  tabGroup: {
+    display: "flex",
+    gap: "0",
+  } as React.CSSProperties,
+  logo: {
+    height: "24px",
+    width: "auto",
   } as React.CSSProperties,
   tab: (active: boolean) =>
     ({
@@ -45,6 +55,11 @@ const TABS: { id: TabId; label: string }[] = [
 
 const UUIDWidget: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabId>("uuid-v7");
+  const [isInIframe, setIsInIframe] = useState(false);
+
+  useEffect(() => {
+    setIsInIframe(window.self !== window.top);
+  }, []);
 
   return (
     <div
@@ -64,17 +79,28 @@ const UUIDWidget: React.FC = () => {
         {`.uuid-widget-tab:not(.uuid-widget-tab--active):hover { background-color: #e9ecef !important; }`}
       </style>
       <div style={tabStyles.tabBar}>
-        {TABS.map(({ id, label }) => (
-          <button
-            key={id}
-            type="button"
-            className={`uuid-widget-tab${activeTab === id ? " uuid-widget-tab--active" : ""}`}
-            style={tabStyles.tab(activeTab === id)}
-            onClick={() => setActiveTab(id)}
-          >
-            {label}
-          </button>
-        ))}
+        <div style={tabStyles.tabGroup}>
+          {TABS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              className={`uuid-widget-tab${activeTab === id ? " uuid-widget-tab--active" : ""}`}
+              style={tabStyles.tab(activeTab === id)}
+              onClick={() => setActiveTab(id)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        {!isInIframe && (
+          <a href="https://www.authgear.com" target="_blank" rel="noopener noreferrer">
+            <img
+              src={`${import.meta.env.BASE_URL}authgear-logo.svg`}
+              alt="Authgear"
+              style={tabStyles.logo}
+            />
+          </a>
+        )}
       </div>
       <div style={tabStyles.content}>
         <div style={{ display: activeTab === "uuid-v7" ? "block" : "none", height: "100%" }}>
